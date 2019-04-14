@@ -37,7 +37,7 @@ class LinearClassifier(object):
     # Run stochastic gradient descent to optimize W
     loss_history = []
     for it in range(num_iters):
-      rand = np.random.choice(len(X), 200)
+      rand = np.random.choice(len(X), batch_size)
       X_batch = X[rand, :]
       y_batch = y[rand]
 
