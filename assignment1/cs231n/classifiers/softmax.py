@@ -42,7 +42,7 @@ def softmax_loss_naive(W, X, y, reg):
       loss += -1 * np.log(softmax)
       dW += ((softmax_vec - np.array(list(range(num_classes)) == y[ex]).astype(int))[:,np.newaxis] * X[ex, :]).transpose()
   # Cleanup with regularitzaiton/averaging
-  loss = (1 / num_train)  * loss + reg * np.sum(np.dot(W, W.transpose()))
+  loss = (1 / num_train)  * loss + reg * np.sum(W * W)
   dW = (1 / num_train) * dW
   dW += 2 * reg * W
 
@@ -76,7 +76,7 @@ def softmax_loss_vectorized(W, X, y, reg):
   # Use N x C one hot vec and softmax to multiply by N x D example matrix to get D x C dW
   dW += (np.dot((softmax_vec - one_hot_targets).transpose(),X)).transpose()
   # Cleanup with regularitzaiton/averaging
-  loss = (1 / num_train)  * loss + reg * np.sum(np.dot(W, W.transpose()))
+  loss = (1 / num_train)  * loss + reg * np.sum(W * W)
   dW = (1 / num_train) * dW
   dW += 2 * reg * W
 

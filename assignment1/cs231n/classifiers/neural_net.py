@@ -69,46 +69,33 @@ class TwoLayerNet(object):
     N, D = X.shape
 
     # Compute the forward pass
-    scores = None
-    #############################################################################
-    # TODO: Perform the forward pass, computing the class scores for the input. #
-    # Store the result in the scores variable, which should be an array of      #
-    # shape (N, C).                                                             #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
+    scores = np.maximum(X.dot(W1) + b1, 0).dot(W2) + b2
+    
     
     # If the targets are not given then jump out, we're done
     if y is None:
       return scores
 
-    # Compute the loss
-    loss = None
-    #############################################################################
-    # TODO: Finish the forward pass, and compute the loss. This should include  #
-    # both the data loss and L2 regularization for W1 and W2. Store the result  #
-    # in the variable loss, which should be a scalar. Use the Softmax           #
-    # classifier loss.                                                          #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
+    scores = (scores.transpose() - np.max(scores, axis = 1)).transpose()
+    scores = np.exp(scores)
+    scores = (scores.transpose() / np.sum(scores, axis = 1)).transpose()
+    
+    softmax = scores[np.arange(len(scores)), y]
+    
+    # Compute loss
+    loss = np.sum(-1 * np.log(softmax))
+    loss = (1 / N)  * loss + reg * (np.sum(W1 * W1) + np.sum(W2 * W2))
 
     # Backward pass: compute gradients
     grads = {}
-    #############################################################################
-    # TODO: Compute the backward pass, computing the derivatives of the weights #
-    # and biases. Store the results in the grads dictionary. For example,       #
-    # grads['W1'] should store the gradient on W1, and be a matrix of same size #
-    #############################################################################
-    pass
-    #############################################################################
-    #                              END OF YOUR CODE                             #
-    #############################################################################
-
+    targets = np.array([y]).reshape(-1)
+    one_hot_targets = np.eye(W2.shape[1])[targets]
+    grad_softmax = (scores - one_hot_targets)
+    grad_relu = (np.dot((grad_softmax),W2.transpose())).transpose()*(X.dot(W1) + b1 > 0).transpose()
+    grads['W2'] = (1 / N) * (np.dot((grad_softmax).transpose(),np.maximum(X.dot(W1) + b1, 0))).transpose() + 2 * reg * W2
+    grads['W1'] = (1 / N) * grad_relu.dot(X).transpose() + 2 * reg * W1
+    grads['b2'] = (1 / N) * np.sum((grad_softmax*np.ones(b2.shape)), axis=0)
+    grads['b1'] = (1 / N) * np.sum(grad_relu.transpose() * np.ones(b1.shape), axis=0)
     return loss, grads
 
   def train(self, X, y, X_val, y_val,
