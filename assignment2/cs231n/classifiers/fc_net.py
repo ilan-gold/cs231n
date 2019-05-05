@@ -131,8 +131,9 @@ class FullyConnectedNet(object):
         while count < len(layers):
             self.params['b' + str(count)] = np.zeros(layers[count])
             self.params['W' + str(count)] = weight_scale * np.random.randn(layers[count - 1], layers[count])
-            self.params['gamma' + str(count)] = np.ones(layers[count])
-            self.params['beta' + str(count)] = np.zeros(layers[count])
+            if count != len(layers) - 1 and normalization == 'batchnorm':
+                self.params['gamma' + str(count)] = np.ones(layers[count])
+                self.params['beta' + str(count)] = np.zeros(layers[count])
             count = count + 1
         
 
@@ -219,24 +220,24 @@ class FullyConnectedNet(object):
 
         return loss, grads
     def affine_batch_relu_forward(self, x, w, b, gamma, beta, bn_param):
-            """
-            Convenience layer that perorms an affine transform followed by a batch and a ReLU
+        """
+        Convenience layer that perorms an affine transform followed by a batch and a ReLU
 
-            Inputs:
-            - x: Input to the affine layer
-            - w, b: Weights for the affine layer
-            - gamma, beta: Weights for batchnorm
-            -bn_param: the batchnorm params
+        Inputs:
+        - x: Input to the affine layer
+        - w, b: Weights for the affine layer
+        - gamma, beta: Weights for batchnorm
+        -bn_param: the batchnorm params
 
-            Returns a tuple of:
-            - out: Output from the ReLU
-            - cache: Object to give to the backward pass
-            """
-            a, fc_cache = affine_forward(x, w, b)
-            out, bn_cache = batchnorm_forward(a, gamma, beta, bn_param)
-            out, relu_cache = relu_forward(out)
-            cache = (fc_cache, relu_cache, bn_cache)
-            return out, cache
+        Returns a tuple of:
+        - out: Output from the ReLU
+        - cache: Object to give to the backward pass
+        """
+        a, fc_cache = affine_forward(x, w, b)
+        out, bn_cache = batchnorm_forward(a, gamma, beta, bn_param)
+        out, relu_cache = relu_forward(out)
+        cache = (fc_cache, relu_cache, bn_cache)
+        return out, cache
         
     def affine_batch_relu_backward(self, dout, cache):
         fc_cache, relu_cache, bn_cache = cache
