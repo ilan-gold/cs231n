@@ -198,7 +198,13 @@ def batchnorm_backward_alt(dout, cache):
     Inputs / outputs: Same as batchnorm_backward
     """
     x, gamma, beta, eps, x_hat = cache[0], cache[1], cache[2], cache[3], cache[4]
-    dx = (dout * gamma) * 1 / (np.sqrt(((np.std(x, axis = 0) ** 2) + eps)))  + (np.sum((dout * gamma), axis = 0) * -1 / (np.sqrt(((np.std(x, axis = 0) ** 2) + eps))) + (np.sum((dout * gamma)*((x - np.mean(x, axis = 0))), axis=0) * -.5 * (((np.std(x, axis = 0) ** 2) + eps) ** -1.5)) * np.mean(x - np.mean(x, axis = 0))) * (1 / x.shape[0]) + 2 * (np.sum((dout * gamma)*((x - np.mean(x, axis = 0))), axis=0) * -.5 * (((np.std(x, axis = 0) ** 2) + eps) ** -1.5)) * (x - np.mean(x, axis = 0))* (1 / x.shape[0]) 
+    m, _ = x.shape
+    var = np.std(x, axis = 0) ** 2
+    mean =  np.mean(x, axis = 0)
+    var_eps = 1 * ((var + eps) ** -.5)
+    dx_hat = dout * gamma
+    d_var = np.sum(dx_hat*(x - mean), axis=0) * -.5 * ((var + eps) ** -1.5)
+    dx = var_eps * (dx_hat - np.mean(dx_hat, axis = 0)) + d_var * (2 / m) * ((x - mean) - np.mean((x - mean), axis = 0))
     dgamma = np.sum(dout * x_hat, axis=0)
     dbeta = np.sum(dout, axis=0)
 
@@ -229,20 +235,14 @@ def layernorm_forward(x, gamma, beta, ln_param):
     """
     out, cache = None, None
     eps = ln_param.get('eps', 1e-5)
-    ###########################################################################
-    # TODO: Implement the training-time forward pass for layer norm.          #
-    # Normalize the incoming data, and scale and  shift the normalized data   #
-    #  using gamma and beta.                                                  #
-    # HINT: this can be done by slightly modifying your training-time         #
-    # implementation of  batch normalization, and inserting a line or two of  #
-    # well-placed code. In particular, can you think of any matrix            #
-    # transformations you could perform, that would enable you to copy over   #
-    # the batch norm code and leave it almost unchanged?                      #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    
+    sample_mean = np.mean(x, axis = 1)
+    sample_std = np.std(x, axis = 1)
+    sample_var = sample_std ** 2
+  
+    x_hat = ((x.transpose() - sample_mean) / np.sqrt(sample_var + eps)).transpose()
+    out = gamma * x_hat + beta
+    cache = (x, gamma, beta, eps, x_hat)
     return out, cache
 
 
@@ -262,18 +262,18 @@ def layernorm_backward(dout, cache):
     - dgamma: Gradient with respect to scale parameter gamma, of shape (D,)
     - dbeta: Gradient with respect to shift parameter beta, of shape (D,)
     """
-    dx, dgamma, dbeta = None, None, None
-    ###########################################################################
-    # TODO: Implement the backward pass for layer norm.                       #
-    #                                                                         #
-    # HINT: this can be done by slightly modifying your training-time         #
-    # implementation of batch normalization. The hints to the forward pass    #
-    # still apply!                                                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    x, gamma, beta, eps, x_hat = cache[0], cache[1], cache[2], cache[3], cache[4]
+    x = x.transpose()
+    m, _ = x.shape
+    var = np.std(x, axis = 0) ** 2
+    mean =  np.mean(x, axis = 0)
+    var_eps = ((var + eps) ** -.5)
+    dx_hat = (dout * gamma).transpose()
+    d_var = np.sum(dx_hat*(x - mean), axis=0) * -.5 * ((var + eps) ** -1.5)
+    dx = var_eps * (dx_hat - np.mean(dx_hat, axis = 0)) + d_var * (2 / m) * ((x - mean) - np.mean((x - mean), axis = 0))
+    dgamma = np.sum(dout * x_hat, axis=0)
+    dbeta = np.sum(dout, axis=0)
+    dx = dx.transpose()
     return dx, dgamma, dbeta
 
 
