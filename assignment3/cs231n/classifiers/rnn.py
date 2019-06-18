@@ -141,9 +141,18 @@ class CaptioningRNN(object):
         # in your implementation, if needed.                                       #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-        pass
-
+        h0, cache_h0 = affine_forward(features, W_proj, b_proj)
+        captions_embedded, cache_embedded = word_embedding_forward(captions_in, W_embed)
+        if self.cell_type == 'rnn':
+            out = 'foo'
+            h_full, cache = rnn_forward(captions_embedded, h0, Wx, Wh, b)
+            # What helpful helper functions you have given us
+            h_out, h_cache = temporal_affine_forward(h_full, W_vocab, b_vocab)
+            loss, dscore = temporal_softmax_loss(h_out, captions_out, mask)
+            dh_out, grads['W_vocab'], grads['b_vocab'] = temporal_affine_backward(dscore, h_cache)
+            grads['x'], grads['h0'], grads['Wx'], grads['Wh'], grads['b'] = rnn_backward(dh_out, cache)
+        grads['W_embed'] = word_embedding_backward(grads['x'], cache_embedded)
+        grads['features'], grads['W_proj'], grads['b_proj'] = affine_backward(grads['h0'], cache_h0)
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -210,7 +219,18 @@ class CaptioningRNN(object):
         # you are using an LSTM, initialize the first cell state to zeros.        #
         ###########################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
+        prev_h, _ = affine_forward(features, W_proj, b_proj)
+        word = self._start
+        word_vec = W_embed[word, :]
+        if self.cell_type == 'rnn':
+            count = 0
+            while count < max_length:
+                prev_h, _ = rnn_step_forward(word_vec, prev_h, Wx, Wh, b)
+                v_out, _ = affine_forward(prev_h, W_vocab, b_vocab)
+                captions[:,count] = np.argmax(v_out, axis = 1)
+                word = np.argmax(v_out, axis = 1)
+                word_vec = W_embed[word, :]
+                count += 1
         pass
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
