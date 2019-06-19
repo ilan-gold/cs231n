@@ -285,8 +285,15 @@ def lstm_step_forward(x, prev_h, prev_c, Wx, Wh, b):
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
-
+    a = x.dot(Wx) + prev_h.dot(Wh) + b
+    i = sigmoid(a[:, 0:int(Wh.shape[1] / 4)])
+    f = sigmoid(a[:, int(Wh.shape[1] / 4):int(Wh.shape[1] / 2)])
+    o = sigmoid(a[:, int(Wh.shape[1] / 2): 3*int(Wh.shape[1] / 4)])
+    g = np.tanh(a[:, 3 * int(Wh.shape[1] / 4):int(Wh.shape[1])])
+    next_c = f * prev_c + i * g
+    next_h = o * np.tanh(next_c)
+    cache = (x, prev_h, prev_c, Wx, Wh, b, a, i, f, o, g, next_h, next_c)
+    
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
     #                               END OF YOUR CODE                             #
@@ -320,8 +327,18 @@ def lstm_step_backward(dnext_h, dnext_c, cache):
     # the output value from the nonlinearity.                                   #
     #############################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
-
-    pass
+    x, prev_h, prev_c, Wx, Wh, b, a, i, f, o, g, next_h, next_c = cache
+    dprev_c = (dnext_h * o * (1 - np.tanh(next_c) ** 2) + dnext_c) * f
+    df = (dnext_h * o * (1 - np.tanh(next_c) ** 2) + dnext_c) * prev_c
+    di = (dnext_h * o * (1 - np.tanh(next_c) ** 2) + dnext_c) * g
+    dg = (dnext_h * o * (1 - np.tanh(next_c) ** 2) + dnext_c) * i
+    do = dnext_h * np.tanh(next_c)
+    da = np.hstack([di * i * (1 - i), df * f * (1 - f), do * o * (1 - o), dg * (1 - g ** 2)])
+    dx = da.dot(Wx.transpose())
+    dprev_h = da.dot(Wh.transpose())
+    db = np.sum(da, axis = 0)
+    dWx = x.transpose().dot(da)
+    dWh = prev_h.transpose().dot(da)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ##############################################################################
